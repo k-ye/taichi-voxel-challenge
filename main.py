@@ -4,7 +4,7 @@ from taichi.math import *
 
 scene = Scene(exposure=10)
 scene.set_floor(-0.9, (0.4, 0.5, 0.4))
-scene.set_directional_light((1, 1, -1), 0.2, (0.2, 0.2, 0.2))
+scene.set_directional_light((-1, 1, -0.6), 0.2, (0.2, 0.2, 0.2))
 GRID_SZ = 64
 
 
@@ -34,12 +34,15 @@ def draw_cone(begin_h, cone_h, cx, cz, rad, rfactor, mat, col):
 
 
 @ti.func
-def draw_rocket(begin_h, end_h, cone_h, cx, cz, rad):
+def draw_rocket(begin_h, end_h, cone_h, cx, cz, rad, draw_flag=False):
     mat, col = 1, vec3(1.0, 1.0, 1.0)
     for y in range(begin_h, end_h):
         for x, z in ti.ndrange((-rad, rad), (-rad, rad)):
             if x * x + z * z < rad * rad:
-                scene.set_voxel(vec3(x + cx, y, z + cz), mat, col)
+                vx_col = col
+                if draw_flag and 39 < y < 44 and -3 < x < 3 and z > 0:
+                    vx_col = vec3(1.0, 0.0, 0.0)
+                scene.set_voxel(vec3(x + cx, y, z + cz), mat, vx_col)
     draw_cone(end_h, cone_h, cx, cz, rad, 0.65, mat, col)
 
 
@@ -55,11 +58,15 @@ def initialize_voxels():
     draw_cone(-GRID_SZ, (FIRE_Y_MAX + GRID_SZ), 0, 0, 6, 0.7, 2,
               vec3(0.8, 0.6, 0.2))
     BODY_RAD, SIDE_RAD = 6, 4
-    draw_rocket(FIRE_Y_MAX, 45, 15, 0, 0, BODY_RAD)
-    draw_rocket(FIRE_Y_MAX, 5, 8, -(BODY_RAD + SIDE_RAD), 0, SIDE_RAD)
-    draw_rocket(FIRE_Y_MAX, 5, 8, (BODY_RAD + SIDE_RAD), 0, SIDE_RAD)
-    draw_rocket(FIRE_Y_MAX, 5, 8, 0, (BODY_RAD + SIDE_RAD), SIDE_RAD)
-    draw_rocket(FIRE_Y_MAX, 5, 8, 0, -(BODY_RAD + SIDE_RAD), SIDE_RAD)
+    # body
+    draw_rocket(FIRE_Y_MAX, 45, 10, 0, 0, BODY_RAD, True)
+    draw_rocket(55, 60, 0, 0, 0, 1)  # tip
+    # thrusters
+    THRUSTER_DIST = BODY_RAD + SIDE_RAD - 1
+    draw_rocket(FIRE_Y_MAX, 5, 6, -THRUSTER_DIST, 0, SIDE_RAD)
+    draw_rocket(FIRE_Y_MAX, 5, 6, THRUSTER_DIST, 0, SIDE_RAD)
+    draw_rocket(FIRE_Y_MAX, 5, 6, 0, THRUSTER_DIST, SIDE_RAD)
+    draw_rocket(FIRE_Y_MAX, 5, 6, 0, THRUSTER_DIST, SIDE_RAD)
 
 
 initialize_voxels()
